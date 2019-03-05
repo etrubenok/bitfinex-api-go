@@ -1,10 +1,12 @@
 package websocket
 
 import (
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
-	"sync"
-	"strings"
 	"encoding/json"
+	"fmt"
+	"strings"
+	"sync"
+
+	bitfinex "github.com/bitfinexcom/bitfinex-api-go/v2"
 )
 
 type messageFactory interface {
@@ -54,9 +56,17 @@ func (f *TradeFactory) Build(chanID int64, objType string, raw []interface{}, ra
 	if "tu" == objType {
 		return nil, nil // do not process TradeUpdate messages on public feed, only need to process TradeExecution (first copy seen)
 	}
+	if "ftu" == objType {
+		return nil, nil // do not process FundingTradeUpdate messages on public feed, only need to process FundingTradeExecution (first copy seen)
+	}
 	if err == nil {
-		trade, err := bitfinex.NewTradeFromRaw(sub.Request.Symbol, raw)
-		return trade, err
+		if "te" == objType {
+			trade, err := bitfinex.NewTradeFromRaw(sub.Request.Symbol, raw)
+			return trade, err
+		} else if "fte" == objType {
+			trade, err := bitfinex.NewFundingTradeFromRaw(raw)
+			return trade, err
+		}
 	}
 	return nil, err
 }
@@ -71,16 +81,16 @@ func (f *TradeFactory) BuildSnapshot(chanID int64, raw [][]float64, raw_bytes []
 
 type BookFactory struct {
 	*subscriptions
-	orderbooks     map[string]*Orderbook
-	manageBooks    bool
-	lock           sync.Mutex
+	orderbooks  map[string]*Orderbook
+	manageBooks bool
+	lock        sync.Mutex
 }
 
 func newBookFactory(subs *subscriptions, obs map[string]*Orderbook, manageBooks bool) *BookFactory {
 	return &BookFactory{
 		subscriptions: subs,
-		orderbooks: obs,
-		manageBooks: manageBooks,
+		orderbooks:    obs,
+		manageBooks:   manageBooks,
 	}
 }
 
@@ -88,7 +98,7 @@ func ConvertBytesToJsonNumberArray(raw_bytes []byte) ([]interface{}, error) {
 	var raw_json_number []interface{}
 	d := json.NewDecoder(strings.NewReader(string(raw_bytes)))
 	d.UseNumber()
-	str_conv_err := d.Decode(&raw_json_number);
+	str_conv_err := d.Decode(&raw_json_number)
 	if str_conv_err != nil {
 		return nil, str_conv_err
 	}
@@ -100,20 +110,26 @@ func (f *BookFactory) Build(chanID int64, objType string, raw []interface{}, raw
 	if err == nil {
 		// we need ot parse the bytes using json numbers since they store the exact string value
 		// and not a float64 representation
+		fmt.Printf("Build: %s\n", raw_bytes)
 		raw_json_number, str_conv_err := ConvertBytesToJsonNumberArray(raw_bytes)
 		if str_conv_err != nil {
 			return nil, str_conv_err
 		}
 
-		update, err := bitfinex.NewBookUpdateFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
-		if f.manageBooks {
-			if orderbook, ok := f.orderbooks[sub.Request.Symbol]; ok {
-				f.lock.Lock()
-				defer f.lock.Unlock()
-				orderbook.UpdateWith(update)
+		if strings.HasPrefix(sub.Request.Symbol, "f") {
+			update, err := bitfinex.NewFundingBookUpdateFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
+			return update, err
+		} else if strings.HasPrefix(sub.Request.Symbol, "t") {
+			update, err := bitfinex.NewBookUpdateFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
+			if f.manageBooks {
+				if orderbook, ok := f.orderbooks[sub.Request.Symbol]; ok {
+					f.lock.Lock()
+					defer f.lock.Unlock()
+					orderbook.UpdateWith(update)
+				}
 			}
+			return update, err
 		}
-		return update, err
 	}
 	return nil, err
 }

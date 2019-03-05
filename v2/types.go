@@ -3,9 +3,9 @@ package bitfinex
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math"
-	"fmt"
 )
 
 // Prefixes for available pairs
@@ -36,11 +36,14 @@ const (
 
 type Mts int64
 type SortOrder int
+
 const (
-	OldestFirst         SortOrder = 1
-	NewestFirst         SortOrder = -1
+	OldestFirst SortOrder = 1
+	NewestFirst SortOrder = -1
 )
+
 type QueryLimit int
+
 const QueryLimitMax QueryLimit = 1000
 
 func CandleResolutionFromString(str string) (CandleResolution, error) {
@@ -88,11 +91,11 @@ const (
 // Settings flags
 
 const (
-	Dec_s int = 9
-  Time_s int = 32
-  Timestamp int = 32768
-  Seq_all int = 65536
-  Checksum int = 131072
+	Dec_s     int = 9
+	Time_s    int = 32
+	Timestamp int = 32768
+	Seq_all   int = 65536
+	Checksum  int = 131072
 )
 
 type orderSide byte
@@ -132,10 +135,10 @@ type bookFrequency string
 type BookFrequency bookFrequency
 
 const (
-	OrderFlagHidden     int = 64
-	OrderFlagClose      int = 512
-	OrderFlagPostOnly   int = 4096
-	OrderFlagOCO        int = 16384
+	OrderFlagHidden   int = 64
+	OrderFlagClose    int = 512
+	OrderFlagPostOnly int = 4096
+	OrderFlagOCO      int = 16384
 )
 
 // OrderNewRequest represents an order to be posted to the bitfinex websocket
@@ -206,7 +209,7 @@ func (o *OrderNewRequest) MarshalJSON() ([]byte, error) {
 }
 
 type OrderUpdateRequest struct {
-	ID           	int64   `json:"id"`
+	ID            int64   `json:"id"`
 	GID           int64   `json:"gid,omitempty"`
 	Price         float64 `json:"price,string,omitempty"`
 	Amount        float64 `json:"amount,string,omitempty"`
@@ -222,7 +225,7 @@ type OrderUpdateRequest struct {
 // websocket service.
 func (o *OrderUpdateRequest) MarshalJSON() ([]byte, error) {
 	aux := struct {
-		ID           	int64   `json:"id"`
+		ID            int64   `json:"id"`
 		GID           int64   `json:"gid,omitempty"`
 		Price         float64 `json:"price,string,omitempty"`
 		Amount        float64 `json:"amount,string,omitempty"`
@@ -1163,31 +1166,22 @@ func NewFundingLoanSnapshotFromRaw(raw []interface{}) (snap *FundingLoanSnapshot
 
 type FundingTrade struct {
 	ID         int64
-	Symbol     string
 	MTSCreated int64
-	OfferID    int64
 	Amount     float64
 	Rate       float64
 	Period     int64
-	Maker      int64
 }
 
 func NewFundingTradeFromRaw(raw []interface{}) (o *FundingTrade, err error) {
-	if len(raw) < 8 {
-		return o, fmt.Errorf("data slice too short for funding trade: %#v", raw)
-	}
-
 	o = &FundingTrade{
 		ID:         i64ValOrZero(raw[0]),
-		Symbol:     sValOrEmpty(raw[1]),
-		MTSCreated: i64ValOrZero(raw[2]),
-		OfferID:    i64ValOrZero(raw[3]),
-		Amount:     f64ValOrZero(raw[4]),
-		Rate:       f64ValOrZero(raw[5]),
-		Period:     i64ValOrZero(raw[6]),
-		Maker:      i64ValOrZero(raw[7]),
+		MTSCreated: i64ValOrZero(raw[1]),
+		Amount:     f64ValOrZero(raw[2]),
+		Rate:       f64ValOrZero(raw[3]),
+		Period:     i64ValOrZero(raw[4]),
 	}
 
+	log.Printf("NewFundingTradeFromRaw: %v\n", NewFundingTradeFromRaw)
 	return
 }
 
@@ -1373,6 +1367,20 @@ type BookUpdate struct {
 	Action      BookAction  // action (add/remove)
 }
 
+//[0.00011936,2,1,5515.7517]]
+type FundingBookUpdate struct {
+	ID          int64  // the book update ID, optional
+	Symbol      string // book symbol
+	Rate        float64
+	RateJsNum   json.Number // update price as json.Number
+	Period      int64
+	Count       int64       // updated count, optional
+	Amount      float64     // updated amount
+	AmountJsNum json.Number // update amount as json.Number
+	Side        OrderSide   // side
+	Action      BookAction  // action (add/remove)
+}
+
 type BookUpdateSnapshot struct {
 	Snapshot []*BookUpdate
 }
@@ -1395,6 +1403,67 @@ func NewBookUpdateSnapshotFromRaw(symbol, precision string, raw [][]float64, raw
 
 func IsRawBook(precision string) bool {
 	return precision == "R0"
+}
+
+func NewFundingBookUpdateFromRaw(symbol, precision string, data []interface{}, raw_numbers interface{}) (b *FundingBookUpdate, err error) {
+	if len(data) < 4 {
+		return b, fmt.Errorf("data slice too short for funding book update, expected %d got %d: %#v", 5, len(data), data)
+	}
+	var px float64
+	var px_num json.Number
+	var id, cnt int64
+	raw_num_array := raw_numbers.([]interface{})
+
+	period := i64ValOrZero(data[1])
+
+	amt := f64ValOrZero(data[3])
+	amt_num := floatToJsonNumber(raw_num_array[3])
+
+	var side OrderSide
+	var actionCtrl float64
+	if IsRawBook(precision) {
+		// [ID, period, rate, amount]
+		id = i64ValOrZero(data[0])
+		px = f64ValOrZero(data[2])
+		px_num = floatToJsonNumber(raw_num_array[2])
+
+		actionCtrl = px
+	} else {
+		// [rate, period, count, amount]
+		px = f64ValOrZero(data[0])
+		px_num = floatToJsonNumber(raw_num_array[0])
+		cnt = i64ValOrZero(data[2])
+
+		actionCtrl = float64(cnt)
+	}
+
+	if amt > 0 {
+		side = Ask
+	} else {
+		side = Bid
+	}
+
+	var action BookAction
+	if actionCtrl <= 0 {
+		action = BookRemoveEntry
+	} else {
+		action = BookUpdateEntry
+	}
+
+	b = &FundingBookUpdate{
+		Symbol:      symbol,
+		Rate:        math.Abs(px),
+		RateJsNum:   px_num,
+		Period:      period,
+		Count:       cnt,
+		Amount:      math.Abs(amt),
+		AmountJsNum: amt_num,
+		Side:        side,
+		Action:      action,
+		ID:          id,
+	}
+
+	return
 }
 
 // NewBookUpdateFromRaw creates a new book update object from raw data.  Precision determines how
