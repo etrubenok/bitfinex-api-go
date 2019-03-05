@@ -324,14 +324,14 @@ func (c *Client) convertRaw(term string, raw []interface{}) interface{} {
 		}
 		return tu
 	case "fte":
-		o, err := bitfinex.NewFundingTradeFromRaw(raw)
+		o, err := bitfinex.NewFundingTradeFromRaw("foobar", raw)
 		if err != nil {
 			return err
 		}
 		fte := bitfinex.FundingTradeExecution(*o)
 		return &fte
 	case "ftu":
-		o, err := bitfinex.NewFundingTradeFromRaw(raw)
+		o, err := bitfinex.NewFundingTradeFromRaw("foobar", raw)
 		if err != nil {
 			return err
 		}
