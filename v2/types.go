@@ -1166,22 +1166,22 @@ func NewFundingLoanSnapshotFromRaw(raw []interface{}) (snap *FundingLoanSnapshot
 
 type FundingTrade struct {
 	ID         int64
+	Symbol     string
 	MTSCreated int64
 	Amount     float64
 	Rate       float64
 	Period     int64
 }
 
-func NewFundingTradeFromRaw(raw []interface{}) (o *FundingTrade, err error) {
+func NewFundingTradeFromRaw(symbol string, raw []interface{}) (o *FundingTrade, err error) {
 	o = &FundingTrade{
 		ID:         i64ValOrZero(raw[0]),
+		Symbol:     symbol,
 		MTSCreated: i64ValOrZero(raw[1]),
 		Amount:     f64ValOrZero(raw[2]),
 		Rate:       f64ValOrZero(raw[3]),
 		Period:     i64ValOrZero(raw[4]),
 	}
-
-	log.Printf("NewFundingTradeFromRaw: %v\n", NewFundingTradeFromRaw)
 	return
 }
 

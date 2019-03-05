@@ -64,7 +64,7 @@ func (f *TradeFactory) Build(chanID int64, objType string, raw []interface{}, ra
 			trade, err := bitfinex.NewTradeFromRaw(sub.Request.Symbol, raw)
 			return trade, err
 		} else if "fte" == objType {
-			trade, err := bitfinex.NewFundingTradeFromRaw(raw)
+			trade, err := bitfinex.NewFundingTradeFromRaw(sub.Request.Symbol, raw)
 			return trade, err
 		}
 	}
