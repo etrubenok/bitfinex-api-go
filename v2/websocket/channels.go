@@ -1,12 +1,12 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"context"
 
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
 )
 
 func (c *Client) handleChannel(msg []byte) error {

@@ -10,13 +10,13 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/bitfinexcom/bitfinex-api-go/utils"
+	"github.com/etrubenok/bitfinex-api-go/utils"
 
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/hex"
 
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
 )
 
 var productionBaseURL = "wss://api.bitfinex.com/ws/2"
@@ -108,22 +108,22 @@ type Client struct {
 	init               bool
 
 	// connection & operational behavior
-	parameters         *Parameters
+	parameters *Parameters
 
 	// subscription manager
-	subscriptions      *subscriptions
-	factories          map[string]messageFactory
-	orderbooks         map[string]*Orderbook
+	subscriptions *subscriptions
+	factories     map[string]messageFactory
+	orderbooks    map[string]*Orderbook
 
 	// close signal sent to user on shutdown
-	shutdown           chan bool
+	shutdown chan bool
 
 	// downstream listener channel to deliver API objects
-	listener           chan interface{}
+	listener chan interface{}
 
 	// race management
-	lock						   sync.Mutex
-	waitGroup          sync.WaitGroup
+	lock      sync.Mutex
+	waitGroup sync.WaitGroup
 }
 
 // Credentials assigns authentication credentials to a connection request.

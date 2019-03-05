@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
 )
 
 type FlagRequest struct {
 	Event string `json:"event"`
-	Flags int `json:"flags"`
+	Flags int    `json:"flags"`
 }
 
 // API for end-users to interact with Bitfinex.

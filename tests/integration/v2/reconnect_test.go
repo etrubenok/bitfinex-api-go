@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
-	"github.com/bitfinexcom/bitfinex-api-go/v2/websocket"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
+	"github.com/etrubenok/bitfinex-api-go/v2/websocket"
 )
 
 var (

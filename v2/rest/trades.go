@@ -1,8 +1,9 @@
 package rest
 
 import (
-	"github.com/bitfinexcom/bitfinex-api-go/v2"
 	"path"
+
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
 )
 
 // TradeService manages the Trade endpoint.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	bitfinex "github.com/bitfinexcom/bitfinex-api-go/v2"
-	"github.com/bitfinexcom/bitfinex-api-go/v2/websocket"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
+	"github.com/etrubenok/bitfinex-api-go/v2/websocket"
 )
 
 // method of testing with mocked endpoints
