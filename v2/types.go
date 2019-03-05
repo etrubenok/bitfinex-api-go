@@ -1202,7 +1202,7 @@ func NewFundingTradeSnapshotFromRaw(raw []interface{}) (snap *FundingTradeSnapsh
 	case []interface{}:
 		for _, v := range raw {
 			if l, ok := v.([]interface{}); ok {
-				o, err := NewFundingTradeFromRaw(l)
+				o, err := NewFundingTradeFromRaw("foobar", l)
 				if err != nil {
 					return snap, err
 				}
