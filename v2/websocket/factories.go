@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	bitfinex "github.com/bitfinexcom/bitfinex-api-go/v2"
+	bitfinex "github.com/etrubenok/bitfinex-api-go/v2"
 )
 
 type messageFactory interface {
