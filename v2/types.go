@@ -1171,16 +1171,26 @@ type FundingTrade struct {
 	Amount     float64
 	Rate       float64
 	Period     int64
+	Side       OrderSide
 }
 
 func NewFundingTradeFromRaw(symbol string, raw []interface{}) (o *FundingTrade, err error) {
+	amt := f64ValOrZero(raw[2])
+	var side OrderSide
+	if amt > 0 {
+		side = Ask
+	} else {
+		side = Bid
+	}
+
 	o = &FundingTrade{
 		ID:         i64ValOrZero(raw[0]),
 		Symbol:     symbol,
 		MTSCreated: i64ValOrZero(raw[1]),
-		Amount:     f64ValOrZero(raw[2]),
+		Amount:     math.Abs(amt),
 		Rate:       f64ValOrZero(raw[3]),
 		Period:     i64ValOrZero(raw[4]),
+		Side:       side,
 	}
 	return
 }
