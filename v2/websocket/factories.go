@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -110,7 +109,6 @@ func (f *BookFactory) Build(chanID int64, objType string, raw []interface{}, raw
 	if err == nil {
 		// we need ot parse the bytes using json numbers since they store the exact string value
 		// and not a float64 representation
-		fmt.Printf("Build: %s\n", raw_bytes)
 		raw_json_number, str_conv_err := ConvertBytesToJsonNumberArray(raw_bytes)
 		if str_conv_err != nil {
 			return nil, str_conv_err
