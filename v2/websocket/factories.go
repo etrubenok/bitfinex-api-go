@@ -114,10 +114,10 @@ func (f *BookFactory) Build(chanID int64, objType string, raw []interface{}, raw
 			return nil, str_conv_err
 		}
 
-		if strings.HasPrefix(sub.Request.Symbol, "f") {
+		if strings.HasPrefix(sub.Request.Symbol, bitfinex.FundingPrefix) {
 			update, err := bitfinex.NewFundingBookUpdateFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
 			return update, err
-		} else if strings.HasPrefix(sub.Request.Symbol, "t") {
+		} else if strings.HasPrefix(sub.Request.Symbol, bitfinex.TradingPrefix) {
 			update, err := bitfinex.NewBookUpdateFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
 			if f.manageBooks {
 				if orderbook, ok := f.orderbooks[sub.Request.Symbol]; ok {
@@ -140,23 +140,28 @@ func (f *BookFactory) BuildSnapshot(chanID int64, raw [][]float64, raw_bytes []b
 		return nil, str_conv_err
 	}
 
-	update, err2 := bitfinex.NewBookUpdateSnapshotFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
-	if err2 != nil {
-		return nil, err2
-	}
-	if err == nil {
-		if f.manageBooks {
-			f.lock.Lock()
-			defer f.lock.Unlock()
-			// create new orderbook
-			f.orderbooks[sub.Request.Symbol] = &Orderbook{
-				symbol: sub.Request.Symbol,
-				bids:   make([]*bitfinex.BookUpdate, 0),
-				asks:   make([]*bitfinex.BookUpdate, 0),
-			}
-			f.orderbooks[sub.Request.Symbol].SetWithSnapshot(update)
-		}
+	if strings.HasPrefix(sub.Request.Symbol, bitfinex.FundingPrefix) {
+		update, err := bitfinex.NewFundingBookUpdateSnapshotFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
 		return update, err
+	} else if strings.HasPrefix(sub.Request.Symbol, bitfinex.TradingPrefix) {
+		update, err2 := bitfinex.NewBookUpdateSnapshotFromRaw(sub.Request.Symbol, sub.Request.Precision, raw, raw_json_number[1])
+		if err2 != nil {
+			return nil, err2
+		}
+		if err == nil {
+			if f.manageBooks {
+				f.lock.Lock()
+				defer f.lock.Unlock()
+				// create new orderbook
+				f.orderbooks[sub.Request.Symbol] = &Orderbook{
+					symbol: sub.Request.Symbol,
+					bids:   make([]*bitfinex.BookUpdate, 0),
+					asks:   make([]*bitfinex.BookUpdate, 0),
+				}
+				f.orderbooks[sub.Request.Symbol].SetWithSnapshot(update)
+			}
+			return update, err
+		}
 	}
 	return nil, err
 }

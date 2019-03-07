@@ -1395,6 +1395,10 @@ type BookUpdateSnapshot struct {
 	Snapshot []*BookUpdate
 }
 
+type FundingBookUpdateSnapshot struct {
+	Snapshot []*FundingBookUpdate
+}
+
 func NewBookUpdateSnapshotFromRaw(symbol, precision string, raw [][]float64, raw_numbers interface{}) (*BookUpdateSnapshot, error) {
 	fmt.Println(raw_numbers)
 	if len(raw) <= 0 {
@@ -1409,6 +1413,22 @@ func NewBookUpdateSnapshotFromRaw(symbol, precision string, raw [][]float64, raw
 		snap[i] = b
 	}
 	return &BookUpdateSnapshot{Snapshot: snap}, nil
+}
+
+func NewFundingBookUpdateSnapshotFromRaw(symbol, precision string, raw [][]float64, raw_numbers interface{}) (*FundingBookUpdateSnapshot, error) {
+	fmt.Println(raw_numbers)
+	if len(raw) <= 0 {
+		return nil, fmt.Errorf("data slice too short for funding book snapshot: %#v", raw)
+	}
+	snap := make([]*FundingBookUpdate, len(raw))
+	for i, f := range raw {
+		b, err := NewFundingBookUpdateFromRaw(symbol, precision, ToInterface(f), raw_numbers.([]interface{})[i])
+		if err != nil {
+			return nil, err
+		}
+		snap[i] = b
+	}
+	return &FundingBookUpdateSnapshot{Snapshot: snap}, nil
 }
 
 func IsRawBook(precision string) bool {
